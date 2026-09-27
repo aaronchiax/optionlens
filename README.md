@@ -24,6 +24,22 @@ On Windows you can also double-click **`run-optionlens.cmd`**. It finds Node.js 
 
 If the Python service is down, the analysis page offers a clearly-labelled **simulated data** mode (`?source=simulated`). Set `MARKET_DATA_PROVIDER=simulated` to make it the default (see `.env.example`).
 
+## GitHub Pages edition
+
+The same app also runs as a static site on GitHub Pages, with no servers:
+
+- `.github/workflows/pages.yml` runs every 30 minutes during US market hours (and on every push). It builds a yfinance snapshot for the tickers in `market-data-service/tickers.txt` (`snapshot.py`), builds the static site (`npm run build:pages`) and deploys it.
+- The site reads that snapshot through `StaticSnapshotProvider`, and all analysis and recommendations run in the visitor's browser.
+- **Limits:** only the listed tickers (edit `tickers.txt` to change them; each adds ~10 s to the job and ~0.8 MB to the site), and data is up to ~30 minutes old (GitHub can delay scheduled runs). If Yahoo blocks more than half the tickers, the job fails and the previous deployment stays live.
+- **Setup:** Settings → Pages → Source: **GitHub Actions**. On a free GitHub plan the repository must be public for Pages. Scheduled workflows pause after 60 days without repository activity; re-enable them from the Actions tab.
+
+Build it locally:
+
+```bash
+market-data-service/.venv/Scripts/python market-data-service/snapshot.py public/data
+npm run build:pages   # → ./out (set NEXT_PUBLIC_BASE_PATH=/optionlens to mimic Pages)
+```
+
 ## Architecture
 
 ```

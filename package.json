@@ -7,6 +7,7 @@
     "dev:web": "next dev -p 3000",
     "dev:api": "node scripts/start-api.mjs",
     "build": "next build",
+    "build:pages": "node scripts/build-pages.mjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

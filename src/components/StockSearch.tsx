@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import type { SearchResult } from "@/lib/market-data/types";
+import { coveredTickers, searchSymbols } from "@/lib/market-data/client";
 
 export function StockSearch({ size = "lg", autoFocus = false, className }: { size?: "lg" | "md"; autoFocus?: boolean; className?: string }) {
   const router = useRouter();
@@ -22,23 +23,30 @@ export function StockSearch({ size = "lg", autoFocus = false, className }: { siz
       setResults([]);
       return;
     }
-    const ctrl = new AbortController();
+    let stale = false;
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const r = await fetch(`/api/search?q=${encodeURIComponent(term)}`, { signal: ctrl.signal });
-        if (r.ok) {
-          setResults((await r.json()).results ?? []);
+        const res = await searchSymbols(term);
+        if (!stale) {
+          setResults(res);
           setActive(0);
         }
       } catch {}
-      setLoading(false);
+      if (!stale) setLoading(false);
     }, 250);
     return () => {
+      stale = true;
       clearTimeout(t);
-      ctrl.abort();
     };
   }, [q]);
+
+  // GitHub Pages edition: only snapshot tickers have pages
+  const [covered, setCovered] = useState<string[] | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  useEffect(() => {
+    coveredTickers().then(setCovered).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const h = (e: MouseEvent) => boxRef.current && !boxRef.current.contains(e.target as Node) && setOpen(false);
@@ -49,6 +57,11 @@ export function StockSearch({ size = "lg", autoFocus = false, className }: { siz
   const go = (symbol: string) => {
     const s = symbol.trim().toUpperCase();
     if (!s) return;
+    if (covered && !covered.includes(s)) {
+      setNotice(`${s} isn't in this edition's data. Available: ${covered.join(", ")}.`);
+      return;
+    }
+    setNotice(null);
     setNavigating(true);
     setOpen(false);
     router.push(`/analyze/${encodeURIComponent(s)}`);
@@ -93,6 +106,7 @@ export function StockSearch({ size = "lg", autoFocus = false, className }: { siz
           Analyze
         </button>
       </form>
+      {notice && <p className="mt-2 text-left text-sm text-warn">{notice}</p>}
       {open && results.length > 0 && (
         <ul className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-line bg-surface shadow-pop" role="listbox">
           {results.slice(0, 8).map((r, i) => (

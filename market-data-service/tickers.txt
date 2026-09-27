@@ -1,0 +1,32 @@
+# Tickers included in the GitHub Pages edition snapshot (one per line).
+# Each adds ~0.5 MB to the site and ~10 s to the refresh job.
+SPY
+QQQ
+IWM
+AAPL
+MSFT
+NVDA
+AMZN
+GOOGL
+META
+TSLA
+AMD
+AVGO
+NFLX
+PLTR
+COIN
+UBER
+ORCL
+CRM
+MU
+INTC
+JPM
+BAC
+XOM
+DIS
+BA
+KO
+WMT
+COST
+ARM
+SMCI

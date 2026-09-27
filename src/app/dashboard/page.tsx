@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
 import type { Quote } from "@/lib/market-data/types";
+import { coveredTickers, loadQuotes } from "@/lib/market-data/client";
 import { HORIZONS, OUTLOOKS } from "@/lib/engine/types";
 import { fmtDate, money, pct } from "@/lib/format";
 import { scenarioToQuery, userData, type SavedAnalysis } from "@/lib/user-data/repository";
@@ -24,10 +25,8 @@ export default function Dashboard() {
     setLoading(true);
     setQuoteErr(null);
     try {
-      const r = await fetch(`/api/quotes?symbols=${syms.join(",")}`);
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error);
-      setQuotes(Object.fromEntries((j.quotes as Q[]).map((q) => [q.symbol, q])));
+      const quotes = await loadQuotes(syms);
+      setQuotes(Object.fromEntries(quotes.map((q) => [q.symbol, q])));
     } catch (e) {
       setQuoteErr((e as Error).message || "Could not load quotes");
     }
@@ -51,6 +50,11 @@ export default function Dashboard() {
     e.preventDefault();
     const s = adding.trim().toUpperCase();
     if (!/^[A-Z0-9.\-^=]{1,15}$/.test(s) || watchlist.includes(s)) return;
+    const covered = await coveredTickers();
+    if (covered && !covered.includes(s)) {
+      setQuoteErr(`${s} isn't in this edition's data. Available: ${covered.join(", ")}.`);
+      return;
+    }
     const next = [...watchlist, s];
     setAdding("");
     await setWL(next);

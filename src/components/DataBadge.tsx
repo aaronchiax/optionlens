@@ -13,7 +13,12 @@ export function DataBadge({ meta }: { meta: DataMeta }) {
     <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-xs text-ink-2">
       <Clock size={12} />
       <span>
-        Market data as of <span className="font-medium text-ink">{fmtDate(meta.asOf, true)}</span> · {meta.dataType === "delayed" ? "Delayed" : "Real-time"} · {meta.provider === "yfinance" ? "Yahoo Finance (yfinance)" : meta.provider}
+        Market data as of <span className="font-medium text-ink">{fmtDate(meta.asOf, true)}</span> · {meta.dataType === "delayed" ? "Delayed" : "Real-time"} ·{" "}
+        {meta.provider === "yfinance"
+          ? "Yahoo Finance (yfinance)"
+          : meta.provider === "yfinance-snapshot"
+            ? <>Yahoo Finance (yfinance) snapshot, refreshed {fmtDate(meta.retrievedAt, true)}</>
+            : meta.provider}
       </span>
     </span>
   );

@@ -1,21 +1,26 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { Suspense } from "react";
 import { AnalyzeView } from "@/components/AnalyzeView";
 
-export default async function AnalyzePage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ symbol: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+// Static export (GitHub Pages): pre-render one page per ticker in the published snapshot.
+// In server mode this returns [] and any ticker is rendered on demand.
+export function generateStaticParams() {
+  if (process.env.STATIC_EXPORT !== "1") return [];
+  try {
+    const idx = JSON.parse(readFileSync(join(process.cwd(), "public", "data", "index.json"), "utf8"));
+    return (idx.tickers as { symbol: string }[]).map((t) => ({ symbol: t.symbol }));
+  } catch {
+    throw new Error("STATIC_EXPORT=1 requires public/data/index.json — run market-data-service/snapshot.py first.");
+  }
+}
+
+export default async function AnalyzePage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
-  const sp = await searchParams;
-  const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
+  const sym = decodeURIComponent(symbol).toUpperCase();
   return (
-    <AnalyzeView
-      key={`${symbol}-${one("source") ?? ""}`}
-      symbol={decodeURIComponent(symbol).toUpperCase()}
-      simulated={one("source") === "simulated"}
-      initial={{ target: one("target"), horizon: one("horizon"), outlook: one("outlook"), pref: one("pref"), cap: one("cap"), loss: one("loss"), vol: one("vol") }}
-    />
+    <Suspense>
+      <AnalyzeView key={sym} symbol={sym} />
+    </Suspense>
   );
 }

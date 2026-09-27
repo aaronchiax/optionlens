@@ -9,7 +9,10 @@ import { legFromContract, type Leg } from "@/lib/engine/position";
 import { expirationsToSearch, recommend } from "@/lib/engine/recommend";
 import { HORIZONS, PREFERENCES, VOL_VIEWS, type GenerationResult, type HorizonKey, type Preference, type Scenario, type StrategyResult } from "@/lib/engine/types";
 import { RecommendationPanel } from "./RecommendationPanel";
-import type { StockSnapshot } from "@/lib/market-data/service";
+import { useSearchParams } from "next/navigation";
+import type { StockSnapshot } from "@/lib/market-data/compose";
+import { loadChain as fetchChain, loadSnapshot, STATIC_MODE } from "@/lib/market-data/client";
+import { MarketDataError } from "@/lib/market-data/types";
 import { fmtDate, money } from "@/lib/format";
 import { finiteOrNull, userData, type SavedAnalysis } from "@/lib/user-data/repository";
 import { useDisclaimer } from "./Disclaimer";
@@ -34,9 +37,15 @@ interface Initial {
   vol?: string;
 }
 
-export function AnalyzeView({ symbol, simulated, initial }: { symbol: string; simulated: boolean; initial: Initial }) {
+export function AnalyzeView({ symbol }: { symbol: string }) {
+  // Read query params in the browser so the page also works as a static export (GitHub Pages)
+  const params = useSearchParams();
+  const simulated = params.get("source") === "simulated";
+  const initial: Initial = useMemo(() => {
+    const g = (k: string) => params.get(k) ?? undefined;
+    return { target: g("target"), horizon: g("horizon"), outlook: g("outlook"), pref: g("pref"), cap: g("cap"), loss: g("loss"), vol: g("vol") };
+  }, [params]);
   const { requireAck } = useDisclaimer();
-  const qs = simulated ? "&source=simulated" : "";
 
   const [snap, setSnap] = useState<StockSnapshot | null>(null);
   const [loadErr, setLoadErr] = useState<{ msg: string; status: number } | null>(null);
@@ -63,12 +72,10 @@ export function AnalyzeView({ symbol, simulated, initial }: { symbol: string; si
   // ---- load snapshot
   useEffect(() => {
     let alive = true;
-    fetch(`/api/stock/${encodeURIComponent(symbol)}?${qs.slice(1)}`)
-      .then(async (r) => {
-        const j = await r.json();
+    loadSnapshot(symbol, simulated)
+      .then((j) => {
         if (!alive) return;
-        if (!r.ok) setLoadErr({ msg: j.error ?? "Failed to load", status: r.status });
-        else {
+        {
           setSnap(j);
           setLoadNow(Date.now());
           const spot = j.quote.price as number;
@@ -83,29 +90,25 @@ export function AnalyzeView({ symbol, simulated, initial }: { symbol: string; si
           });
         }
       })
-      .catch(() => alive && setLoadErr({ msg: "Network error", status: 0 }));
+      .catch((e: unknown) => alive && setLoadErr({ msg: (e as Error).message || "Failed to load", status: e instanceof MarketDataError ? e.status : 0 }));
     userData.getWatchlist().then(setWatchlist);
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, qs]);
+  }, [symbol, simulated]);
 
   const loadChain = useCallback(
     (exp: string) => {
       const c = chainCache.current;
       if (!c.has(exp)) {
-        const p = fetch(`/api/options/${encodeURIComponent(symbol)}?expiration=${exp}${qs}`).then(async (r) => {
-          const j = await r.json();
-          if (!r.ok) throw new Error(j.error ?? "Failed to load option chain");
-          return j.chain as EnrichedChain;
-        });
+        const p = fetchChain(symbol, exp, simulated);
         p.catch(() => c.delete(exp));
         c.set(exp, p);
       }
       return c.get(exp)!;
     },
-    [symbol, qs],
+    [symbol, simulated],
   );
 
   const expirations = useMemo(() => (snap ? selectableExpirations(snap.expirations, loadNow) : []), [snap, loadNow]);

@@ -1,6 +1,9 @@
 node_modules/
 .next/
+.next-static/
 out/
+# generated market-data snapshot (built by the Pages workflow, never committed)
+public/data/
 .env
 .env.local
 *.tsbuildinfo
