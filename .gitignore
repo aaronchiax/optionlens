@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+__pycache__/
+market-data-service/.venv/
+.claude/
+*.log

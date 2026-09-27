@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --canvas: 249 249 247;
+  --surface: 255 255 255;
+  --surface-2: 244 244 241;
+  --line: 225 224 217;
+  --ink: 11 11 11;
+  --ink-2: 82 81 78;
+  --muted: 120 118 112;
+  --accent: 42 120 214;
+  --accent-ink: 255 255 255;
+  --gain: 0 115 30;
+  --loss: 200 52 52;
+  --warn: 176 112 0;
+  --model: 74 58 167;
+
+  /* chart chrome */
+  --chart-grid: #e8e7e1;
+  --chart-axis: #c3c2b7;
+  --chart-label: #807e78;
+  --chart-price: #2a78d6;
+  --chart-t0: #eb6834;
+  --chart-gain: #0ca30c;
+  --chart-loss: #d03b3b;
+  --chart-model: #4a3aa7;
+  --chart-ref: #52514e;
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas: 13 13 13;
+  --surface: 24 24 23;
+  --surface-2: 34 34 32;
+  --line: 48 48 45;
+  --ink: 244 244 241;
+  --ink-2: 195 194 183;
+  --muted: 150 148 140;
+  --accent: 57 135 229;
+  --accent-ink: 255 255 255;
+  --gain: 34 180 34;
+  --loss: 230 103 103;
+  --warn: 250 178 25;
+  --model: 144 133 233;
+
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+  --chart-label: #898781;
+  --chart-price: #3987e5;
+  --chart-t0: #d95926;
+  --chart-gain: #22b422;
+  --chart-loss: #e66767;
+  --chart-model: #9085e9;
+  --chart-ref: #c3c2b7;
+}
+
+html,
+body {
+  background: rgb(var(--canvas));
+  color: rgb(var(--ink));
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-card;
+  }
+  .label {
+    @apply text-[11px] font-medium uppercase tracking-[0.08em] text-muted;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/15;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-accent-ink hover:brightness-110 active:brightness-95;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-surface text-ink hover:bg-surface-2;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-ink-2;
+  }
+  .th {
+    @apply whitespace-nowrap px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted;
+  }
+  .td {
+    @apply whitespace-nowrap px-3 py-2 tnum;
+  }
+}
+
+/* range slider */
+input[type="range"] {
+  accent-color: rgb(var(--accent));
+}
+
+/* Recharts: keep focus outlines off SVG surfaces */
+.recharts-wrapper svg:focus,
+.recharts-surface:focus {
+  outline: none;
+}
